@@ -39,9 +39,10 @@ const (
 
 // Material holds information for a material.
 type Material struct {
-	Name  string
-	MapKd string
-	Kd    [3]float32
+	Name                       string
+	MapKa, MapKd, MapKs, MapNs string
+	Ka, Kd, Ks                 [3]float32
+	Ns                         float32
 }
 
 // MaterialLib stores materials.
@@ -144,6 +145,31 @@ func parseLibLine(p *libParser, lib MaterialLib, rawLine string, lineCount int) 
 		}
 		p.currMaterial = mat
 
+	case strings.HasPrefix(line, "Ka "):
+		Ka := line[3:]
+
+		if p.currMaterial == nil {
+			return ErrNonFatal, fmt.Errorf("parseLibLine: %d undefined material for Ka=%s [%s]", lineCount, Ka, line)
+		}
+
+		color, err := parseFloatVector3Space(Ka)
+		if err != nil {
+			return ErrNonFatal, fmt.Errorf("parseLibLine: %d parsing error for Ka=%s [%s]: %v", lineCount, Ka, line, err)
+		}
+
+		p.currMaterial.Ka[0] = float32(color[0])
+		p.currMaterial.Ka[1] = float32(color[1])
+		p.currMaterial.Ka[2] = float32(color[2])
+
+	case strings.HasPrefix(line, "map_Ka "):
+		mapKa := line[7:]
+
+		if p.currMaterial == nil {
+			return ErrNonFatal, fmt.Errorf("parseLibLine: %d undefined material for map_Ka=%s [%s]", lineCount, mapKa, line)
+		}
+
+		p.currMaterial.MapKa = mapKa
+
 	case strings.HasPrefix(line, "Kd "):
 		Kd := line[3:]
 
@@ -169,13 +195,57 @@ func parseLibLine(p *libParser, lib MaterialLib, rawLine string, lineCount int) 
 
 		p.currMaterial.MapKd = mapKd
 
-	case strings.HasPrefix(line, "map_Ka "):
+	case strings.HasPrefix(line, "Ks "):
+		Ks := line[3:]
+
+		if p.currMaterial == nil {
+			return ErrNonFatal, fmt.Errorf("parseLibLine: %d undefined material for Ks=%s [%s]", lineCount, Ks, line)
+		}
+
+		color, err := parseFloatVector3Space(Ks)
+		if err != nil {
+			return ErrNonFatal, fmt.Errorf("parseLibLine: %d parsing error for Ks=%s [%s]: %v", lineCount, Ks, line, err)
+		}
+
+		p.currMaterial.Ks[0] = float32(color[0])
+		p.currMaterial.Ks[1] = float32(color[1])
+		p.currMaterial.Ks[2] = float32(color[2])
+
+	case strings.HasPrefix(line, "map_Ks "):
+		mapKs := line[7:]
+
+		if p.currMaterial == nil {
+			return ErrNonFatal, fmt.Errorf("parseLibLine: %d undefined material for map_Ks=%s [%s]", lineCount, mapKs, line)
+		}
+
+		p.currMaterial.MapKs = mapKs
+
+	case strings.HasPrefix(line, "Ns "):
+		Ns := line[3:]
+
+		if p.currMaterial == nil {
+			return ErrNonFatal, fmt.Errorf("parseLibLine: %d undefined material for Ns=%s [%s]", lineCount, Ns, line)
+		}
+
+		exponent, err := parseFloatVectorSpace(Ns, 1)
+		if err != nil {
+			return ErrNonFatal, fmt.Errorf("parseLibLine: %d parsing error for Ns=%s [%s]: %v", lineCount, Ns, line, err)
+		}
+
+		p.currMaterial.Ns = float32(exponent[0])
+
+	case strings.HasPrefix(line, "map_Ns "):
+		mapNs := line[7:]
+
+		if p.currMaterial == nil {
+			return ErrNonFatal, fmt.Errorf("parseLibLine: %d undefined material for map_Ns=%s [%s]", lineCount, mapNs, line)
+		}
+
+		p.currMaterial.MapNs = mapNs
+
 	case strings.HasPrefix(line, "map_d "):
 	case strings.HasPrefix(line, "map_Bump "):
-	case strings.HasPrefix(line, "Ns "):
-	case strings.HasPrefix(line, "Ka "):
 	case strings.HasPrefix(line, "Ke "):
-	case strings.HasPrefix(line, "Ks "):
 	case strings.HasPrefix(line, "Ni "):
 	case strings.HasPrefix(line, "d "):
 	case strings.HasPrefix(line, "illum "):
